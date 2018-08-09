@@ -574,3 +574,4 @@ def getHtml() {
 private def textDevName() { return "Nest Presence${appDevName()}" }
 private def appDevType()  { return false }
 private def appDevName()  { return appDevType() ? " (Dev)" : "" }
+
