@@ -6,18 +6,18 @@
  *  Graphing Modeled on code from Andreas Amann (@ahndee)
  *
  * Modeled after the EcoBee thermostat under Templates in the IDE
- * Copyright (C) 2017, 2018 Anthony S.
+ * Copyright (C) 2017, 2018, 2019 Anthony S.
  * Licensing Info: Located at https://raw.githubusercontent.com/tonesto7/nest-manager/master/LICENSE.md
  */
 
 import java.text.SimpleDateFormat
 import groovy.time.*
 
-def devVer() { return "5.3.7" }
+def devVer() { return "5.4.6" }
 
 // for the UI
 metadata {
-	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.", vid: "SmartThings-smartthings-Z-Wave_Thermostat") {
+	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.", vid: "SmartThings-smartthings-Z-Wave_Thermostat", ocfDeviceType: "oic.d.thermostat") {
 		capability "Actuator"
 		capability "Relative Humidity Measurement"
 		capability "Refresh"
@@ -92,6 +92,7 @@ metadata {
 		attribute "sunlightCorrectionActive", "string"
 		attribute "timeToTarget", "string"
 		attribute "nestType", "string"
+		attribute "usingEmergencyHeat", "string"
 		attribute "pauseUpdates", "string"
 		attribute "nestReportData", "string"
 		attribute "previousthermostatMode", "string"
@@ -99,6 +100,7 @@ metadata {
 		attribute "whoMadeChangesDesc", "string"
 		attribute "whoMadeChangesDescDt", "string"
 		attribute "whoSetEcoMode", "string"
+		attribute "temperatureur", "string"
 	}
 
 	simulator {
@@ -146,16 +148,15 @@ metadata {
 			state("default", label:'${currentValue}\u00b0', icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nest_like.png",
 					backgroundColors: getTempColors())
 		}
-		standardTile("thermostatMode", "device.nestThermostatMode", width:2, height:2, decoration: "flat") {
-			state("off", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_btn_icon.png")
-			state("heat", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_btn_icon.png")
-			state("cool", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cool_btn_icon.png")
-			state("auto", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_cool_btn_icon.png")
-			state("eco", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/eco_icon.png")
+		standardTile("thermostatMode", "device.nestThermostatMode", width: 2, height: 2, supportedStates: "device.supportedThermostatModes", decoration: "flat") {
+			state("off",  action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_btn_icon.png")
+			state("heat", action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_btn_icon.png")
+			state("cool", action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cool_btn_icon.png")
+			state("auto", action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_cool_btn_icon.png")
+			state("eco",  action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/eco_icon.png")
 			state("emergency heat", action:"changeMode", nextState: "updating", icon: "st.thermostat.emergency")
 			state("updating", label:"", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cmd_working.png")
 		}
-
 
 		standardTile("offBtn", "device.off", width:2, height:2, decoration: "flat") {
 			state("default", action: "offbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_btn_icon.png")
@@ -177,16 +178,16 @@ metadata {
 		}
 
 		standardTile("thermostatFanMode", "device.thermostatFanMode", width:2, height:2, decoration: "flat") {
-			state("auto", action: "changeFanMode", 	nextState: "updating",	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/fan_auto_icon.png")
-			state("on",	action: "changeFanMode",	nextState: "updating", 	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/fan_on_icon.png")
+			state("auto", 	action: "changeFanMode", 	nextState: "updating",	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/fan_auto_icon.png")
+			state("on",			action: "changeFanMode",	nextState: "updating", 	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/fan_on_icon.png")
 			state("updating", label:"", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cmd_working.png")
 			state "disabled", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/fan_disabled_icon.png"
 		}
 		standardTile("nestPresence", "device.nestPresence", width:2, height:2, decoration: "flat") {
-			state "home", 		action: "setPresence",	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/pres_home_icon.png"
-			state "away", 		action: "setPresence", 	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/pres_away_icon.png"
-			state "auto-away", 	action: "setPresence", 	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/pres_autoaway_icon.png"
-			state "unknown",	action: "setPresence", 	icon: "st.unknown.unknown.unknown"
+			state "home",       action: "setPresence",	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/pres_home_icon.png"
+			state "away",       action: "setPresence", 	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/pres_away_icon.png"
+			state "auto-away",  action: "setPresence", 	icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/pres_autoaway_icon.png"
+			state "unknown",		action: "setPresence", 	icon: "st.unknown.unknown.unknown"
 		}
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
@@ -221,7 +222,7 @@ metadata {
 			state "default", label:'', action:"coolingSetpointDown", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cool_arrow_down.png"
 			state "", label: ''
 		}
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 3, range: getRange(), inactiveLabel: false) {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 3, range: getRange(), debouncePeriod: 1500, inactiveLabel: false) {
 			state "setCoolingSetpoint", action:"setCoolingSetpoint", backgroundColor:"#0099FF"
 			state "", label: ''
 		}
@@ -235,11 +236,12 @@ metadata {
 			state("default", label: 'Data Last Received:\n${currentValue}')
 		}
 		valueTile("devTypeVer", "device.devTypeVer",  width: 3, height: 1, decoration: "flat") {
-			state("default", label: 'Device Type:\nv${currentValue}')
+			state("default", label: 'Device Type:\nv${currentValue}', defaultState: true)
 		}
 		valueTile("apiStatus", "device.apiStatus", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-			state "ok", label: "API Status:\nOK"
-			state "issue", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+			state "Good", label: "API Status:\nOK"
+			state "Sporadic", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+			state "Outage", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
 		}
 		valueTile("debugOn", "device.debugOn", width: 2, height: 1, decoration: "flat") {
 			state "true", 	label: 'Debug:\n${currentValue}'
@@ -256,7 +258,7 @@ metadata {
 		}
 		htmlTile(name:"graphHTML", action: "graphHTML", width: 6, height: 13, whitelist: ["www.gstatic.com", "raw.githubusercontent.com", "cdn.rawgit.com"])
 		valueTile("remind", "device.blah", inactiveLabel: false, width: 6, height: 2, decoration: "flat", wordWrap: true) {
-			state("default", label: 'Reminder:\nHTML Graph and History Content is Available in SmartApp')
+			state("default", label: 'Reminder:\nHTML Graph and History Content is Available in SmartApp', defaultState: true)
 		}
 		main("temp2")
 		details([
@@ -323,10 +325,19 @@ void checkStateClear() {
 		Logger("checkStateClear...resetting ALL toggle")
 		state.resetAllData = false
 	}
+	if(before > 65) {
+		Logger("checkStateClear...Clearing HISTORY ${before}")
+		def data = getState()?.findAll {
+			(it?.key in ["today", "temperatureTable", "operatingStateTable", "humidityTable", "coolSetpointTable", "heatSetpointTable", "extTempTable", "fanModeTable", "historyStoreMap", "temperatureTableYesterday", "operatingStateTableYesterday", "humidityTableYesterday", "coolSetpointTableYesterday", "heatSetpointTableYesterday", "extTempTableYesterday", "fanModeTableYesterday" ])
+		}
+		data.each { item ->
+			state.remove(item?.key.toString())
+		}
+	}
 	if(!state?.resetHistoryOnly && resetHistoryOnly) {
 		Logger("checkStateClear...Clearing HISTORY")
 		def data = getState()?.findAll {
-			(it?.key in ["today", "temperatureTable", "operatingStateTable", "humidityTable", "historyStoreMap", "temperatureTableYesterday", "operatingStateTableYesterday", "humidityTableYesterday"])
+			(it?.key in ["today", "temperatureTable", "operatingStateTable", "humidityTable", "coolSetpointTable", "heatSetpointTable", "extTempTable", "fanModeTable", "historyStoreMap", "temperatureTableYesterday", "operatingStateTableYesterday", "humidityTableYesterday", "coolSetpointTableYesterday", "heatSetpointTableYesterday", "extTempTableYesterday", "fanModeTableYesterday" ])
 		}
 		data.each { item ->
 			state.remove(item?.key.toString())
@@ -410,9 +421,7 @@ def modifyDeviceStatus(status) {
 
 def ping() {
 	Logger("ping...")
-//	if(useTrackedHealth()) {
-		keepAwakeEvent()
-//	}
+	keepAwakeEvent()
 }
 
 def keepAwakeEvent() {
@@ -471,7 +480,7 @@ void processEvent(data) {
 	checkStateClear()
 
 	//LogAction("processEvent Parsing data ${eventData}", "trace")
-	try {
+//	try {
 		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			state.isBeta = eventData?.isBeta == true ? true : false
@@ -483,16 +492,14 @@ void processEvent(data) {
 			state.healthMsg = eventData?.healthNotify?.healthMsg == true ? true : false
 			state.healthMsgWait = eventData?.healthNotify?.healthMsgWait
 			state.showGraphs = eventData?.showGraphs != null ? eventData?.showGraphs : true
-			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException = false ? false : true }
+			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException == false ? false : true }
 			debugOnEvent(eventData?.debug ? true : false)
 			deviceVerEvent(eventData?.latestVer.toString())
 			if(virtType()) { nestTypeEvent("virtual") } else { nestTypeEvent("physical") }
-//			if(useTrackedHealth()) {
-				if(eventData.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
-					state.hcTimeout = eventData?.hcTimeout
-					verifyHC()
-				}
-//			}
+			if(eventData.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
+				state.hcTimeout = eventData?.hcTimeout
+				verifyHC()
+			}
 			if(state?.swVersion != devVer()) {
 				initialize()
 				state.swVersion = devVer()
@@ -532,10 +539,10 @@ void processEvent(data) {
 			softwareVerEvent(eventData?.data?.software_version.toString())
 			//onlineStatusEvent(eventData?.data?.is_online.toString())
 			apiStatusEvent(eventData?.apiIssues)
-			if(eventData?.htmlInfo) { state?.htmlInfo = eventData?.htmlInfo }
 			safetyTempsEvent(eventData?.safetyTemps)
 			comfortHumidityEvent(eventData?.comfortHumidity)
 			comfortDewpointEvent(eventData?.comfortDewpoint)
+			emergencyHeatEvent(eventData?.data?.is_using_emergency_heat)
 			state.voiceReportPrefs = eventData?.vReportPrefs
 			autoSchedDataEvent(eventData?.autoSchedData)
 			state?.devBannerData = eventData?.devBannerData ?: null
@@ -649,11 +656,13 @@ void processEvent(data) {
 		//This will return all of the devices state data to the logs.
 		//LogAction("Device State Data: ${getState()}")
 		return null
+/*
 	}
 	catch (ex) {
 		log.error "generateEvent Exception:", ex
 		exceptionDataHandler(ex?.message, "generateEvent")
 	}
+*/
 }
 
 def getStateSize()	{ return state?.toString().length() }
@@ -905,10 +914,14 @@ def thermostatSetpointEvent(Double targetTemp) {
 def temperatureEvent(Double tempVal) {
 	def temp = device.currentState("temperature")?.stringValue
 	def rTempVal = wantMetric() ? tempVal.round(1) : tempVal.round(0).toInteger()
+	def unrounded_rTempVal = tempVal.round(1)
 	if(isStateChange(device, "temperature", rTempVal.toString())) {
 		LogAction("UPDATED | Temperature is (${rTempVal}${tUnitStr()}) | Original Temp: (${temp}${tUnitStr()})")
 		sendEvent(name:'temperature', value: rTempVal, unit: state?.tempUnit, descriptionText: "Ambient Temperature is ${rTempVal}${tUnitStr()}", displayed: true, isStateChange: true)
 	} else { LogAction("Temperature is (${rTempVal}${tUnitStr()}) | Original Temp: (${temp})${tUnitStr()}") }
+	if(isStateChange(device, "temperatureur", unrounded_rTempVal.toString())) {
+		sendEvent(name:'temperatureur', value: unrounded_rTempVal, unit: state?.tempUnit, descriptionText: "Ambient Temperature is ${rTempVal}${tUnitStr()}", displayed: false, isStateChange: true)
+	}
 	checkSafetyTemps()
 }
 
@@ -1248,7 +1261,7 @@ def onlineStatusEvent(online) {
 
 def apiStatusEvent(issue) {
 	def curStat = device.currentState("apiStatus")?.value
-	def newStat = issue ? "Has Issue" : "Good"
+	def newStat = issue
 	state?.apiStatus = newStat
 	if(isStateChange(device, "apiStatus", newStat.toString())) {
 		Logger("UPDATED | API Status is: (${newStat.toString().capitalize()}) | Original State: (${curStat.toString().capitalize()})")
@@ -1273,6 +1286,16 @@ def autoSchedDataEvent(schedData) {
 		Logger("UPDATED | Automation Schedule Data for this device has been Updated", "info")
 	}
 	state?.curAutoSchedData = schedData
+}
+
+def emergencyHeatEvent(emerHeat) {
+	def curStat = device.currentState("usingEmergencyHeat")?.value
+	def newStat = emerHeat
+	if(isStateChange(device, "usingEmergencyHeat", newStat.toString())) {
+		state.is_using_emergency_heat = !!newStat
+		Logger("Using Emergency Heat is: (${newStat.toString().capitalize()}) | Previous State: (${curStat.toString().capitalize()})")
+		sendEvent(name: "usingEmergencyHeat", value: newStat, descriptionText: "Using Emergency Heat is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
+	}
 }
 
 def canHeatCool(canHeat, canCool) {
@@ -2549,7 +2572,7 @@ void getSomeData(devpoll = false) {
 
 // hackery to test getting old data
 	def tryNum = 2
-	if(state.eric != tryNum ) {
+	if(state?.eric != tryNum ) {
 		if(devpoll) {
 			runIn( 33, "getSomeData", [overwrite: true])
 			return
@@ -2724,101 +2747,108 @@ def updateOperatingHistory(today) {
 	}
 
 	if(dayChange) {
-		def Op_coolingusage = getSumUsage(state.operatingStateTableYesterday, "cooling").toInteger()
-		def Op_heatingusage = getSumUsage(state.operatingStateTableYesterday, "heating").toInteger()
-		def Op_idle = getSumUsage(state.operatingStateTableYesterday, "idle").toInteger()
-		def Op_fanonly = getSumUsage(state.operatingStateTableYesterday, "fan only").toInteger()
-		def fan_on = getSumUsage(state.fanModeTableYesterday, "on").toInteger()
-		def fan_auto = getSumUsage(state.fanModeTableYesterday, "auto").toInteger()
+		try {
+			long Op_coolingusage = getSumUsage(state.operatingStateTableYesterday, "cooling")
+			long Op_heatingusage = getSumUsage(state.operatingStateTableYesterday, "heating")
+			long Op_idle = getSumUsage(state.operatingStateTableYesterday, "idle")
+			long Op_fanonly = getSumUsage(state.operatingStateTableYesterday, "fan only")
+			long fan_on = getSumUsage(state.fanModeTableYesterday, "on")
+			long fan_auto = getSumUsage(state.fanModeTableYesterday, "auto")
 
-		log.info "fanon ${fan_on}  fanauto: ${fan_auto} opidle: ${Op_idle}  cool: ${Op_coolingusage} heat: ${Op_heatingusage} fanonly: ${Op_fanonly}"
+			log.info "fanon ${fan_on}  fanauto: ${fan_auto} opidle: ${Op_idle}  cool: ${Op_coolingusage} heat: ${Op_heatingusage} fanonly: ${Op_fanonly}"
 
-		hm."OperatingState_Day${hm.currentDay}_cooling" = Op_coolingusage
-		hm."OperatingState_Day${hm.currentDay}_heating" = Op_heatingusage
-		hm."OperatingState_Day${hm.currentDay}_idle" = Op_idle
-		hm."OperatingState_Day${hm.currentDay}_fanonly" = Op_fanonly
-		hm."FanMode_Day${hm.currentDay}_On" = fan_on
-		hm."FanMode_Day${hm.currentDay}_auto" = fan_auto
+			hm."OperatingState_Day${hm.currentDay}_cooling" = Op_coolingusage
+			hm."OperatingState_Day${hm.currentDay}_heating" = Op_heatingusage
+			hm."OperatingState_Day${hm.currentDay}_idle" = Op_idle
+			hm."OperatingState_Day${hm.currentDay}_fanonly" = Op_fanonly
+			hm."FanMode_Day${hm.currentDay}_On" = fan_on
+			hm."FanMode_Day${hm.currentDay}_auto" = fan_auto
 
-		hm.currentDay = dayNum
-		hm.OperatingState_DayWeekago_cooling = hm."OperatingState_Day${hm.currentDay}_cooling"
-		hm.OperatingState_DayWeekago_heating = hm."OperatingState_Day${hm.currentDay}_heating"
-		hm.OperatingState_DayWeekago_idle = hm."OperatingState_Day${hm.currentDay}_idle"
-		hm.OperatingState_DayWeekago_fanonly = hm."OperatingState_Day${hm.currentDay}_fanonly"
-		hm.FanMode_DayWeekago_On = hm."FanMode_Day${hm.currentDay}_On"
-		hm.FanMode_DayWeekago_auto = hm."FanMode_Day${hm.currentDay}_auto"
-		hm."OperatingState_Day${hm.currentDay}_cooling" = 0L
-		hm."OperatingState_Day${hm.currentDay}_heating" = 0L
-		hm."OperatingState_Day${hm.currentDay}_idle" = 0L
-		hm."OperatingState_Day${hm.currentDay}_fanonly" = 0L
-		hm."FanMode_Day${hm.currentDay}_On" = 0L
-		hm."FanMode_Day${hm.currentDay}_auto" = 0L
+			hm.currentDay = dayNum
+			hm.OperatingState_DayWeekago_cooling = hm."OperatingState_Day${hm.currentDay}_cooling"
+			hm.OperatingState_DayWeekago_heating = hm."OperatingState_Day${hm.currentDay}_heating"
+			hm.OperatingState_DayWeekago_idle = hm."OperatingState_Day${hm.currentDay}_idle"
+			hm.OperatingState_DayWeekago_fanonly = hm."OperatingState_Day${hm.currentDay}_fanonly"
+			hm.FanMode_DayWeekago_On = hm."FanMode_Day${hm.currentDay}_On"
+			hm.FanMode_DayWeekago_auto = hm."FanMode_Day${hm.currentDay}_auto"
+			hm."OperatingState_Day${hm.currentDay}_cooling" = 0L
+			hm."OperatingState_Day${hm.currentDay}_heating" = 0L
+			hm."OperatingState_Day${hm.currentDay}_idle" = 0L
+			hm."OperatingState_Day${hm.currentDay}_fanonly" = 0L
+			hm."FanMode_Day${hm.currentDay}_On" = 0L
+			hm."FanMode_Day${hm.currentDay}_auto" = 0L
 
-		def t1 = hm["OperatingState_Month${hm.currentMonth}_cooling"]?.toInteger() ?: 0L
-		hm."OperatingState_Month${hm.currentMonth}_cooling" = t1 + Op_coolingusage
-		t1 = hm["OperatingState_Month${hm.currentMonth}_heating"]?.toInteger() ?: 0L
-		hm."OperatingState_Month${hm.currentMonth}_heating" = t1 + Op_heatingusage
-		t1 = hm["OperatingState_Month${hm.currentMonth}_idle"]?.toInteger() ?: 0L
-		hm."OperatingState_Month${hm.currentMonth}_idle" = t1 + Op_idle
-		t1 = hm["OperatingState_Month${hm.currentMonth}_fanonly"]?.toInteger() ?: 0L
-		hm."OperatingState_Month${hm.currentMonth}_fanonly" = t1 + Op_fanonly
-		t1 = hm["FanMode_Month${hm.currentMonth}_On"]?.toInteger() ?: 0L
-		hm."FanMode_Month${hm.currentMonth}_On" = t1 + fan_on
-		t1 = hm["FanMode_Month${hm.currentMonth}_auto"]?.toInteger() ?: 0L
-		hm."FanMode_Month${hm.currentMonth}_auto" = t1 + fan_auto
+			long t1 = hm?."OperatingState_Month${hm.currentMonth}_cooling"?.toInteger() ?: 0L
+			hm."OperatingState_Month${hm.currentMonth}_cooling" = t1 + Op_coolingusage
+			t1 = hm?."OperatingState_Month${hm.currentMonth}_heating"?.toInteger() ?: 0L
+			hm."OperatingState_Month${hm.currentMonth}_heating" = t1 + Op_heatingusage
+			t1 = hm?."OperatingState_Month${hm.currentMonth}_idle"?.toInteger() ?: 0L
+			hm."OperatingState_Month${hm.currentMonth}_idle" = t1 + Op_idle
+			t1 = hm?."OperatingState_Month${hm.currentMonth}_fanonly"?.toInteger() ?: 0L
+			hm."OperatingState_Month${hm.currentMonth}_fanonly" = t1 + Op_fanonly
+			t1 = hm?."FanMode_Month${hm.currentMonth}_On"?.toInteger() ?: 0L
+			hm."FanMode_Month${hm.currentMonth}_On" = t1 + fan_on
+			t1 = hm?."FanMode_Month${hm.currentMonth}_auto"?.toInteger() ?: 0L
+			hm."FanMode_Month${hm.currentMonth}_auto" = t1 + fan_auto
 
-		if(monthChange) {
-			hm.currentMonth = monthNum
-			hm.OperatingState_MonthYearago_cooling = hm."OperatingState_Month${hm.currentMonth}_cooling"
-			hm.OperatingState_MonthYearago_heating = hm."OperatingState_Month${hm.currentMonth}_heating"
-			hm.OperatingState_MonthYearago_idle = hm."OperatingState_Month${hm.currentMonth}_idle"
-			hm.OperatingState_MonthYearago_fanonly = hm."OperatingState_Month${hm.currentMonth}_fanonly"
-			hm.FanMode_MonthYearago_On = hm."FanMode_Month${hm.currentMonth}_On"
-			hm.FanMode_MonthYearago_auto = hm."FanMode_Month${hm.currentMonth}_auto"
-			hm."OperatingState_Month${hm.currentMonth}_cooling" = 0L
-			hm."OperatingState_Month${hm.currentMonth}_heating" = 0L
-			hm."OperatingState_Month${hm.currentMonth}_idle" = 0L
-			hm."FanMode_Month${hm.currentMonth}_On" = 0L
-			hm."FanMode_Month${hm.currentMonth}_auto" = 0L
+			if(monthChange) {
+				hm.currentMonth = monthNum
+				hm.OperatingState_MonthYearago_cooling = hm."OperatingState_Month${hm.currentMonth}_cooling"
+				hm.OperatingState_MonthYearago_heating = hm."OperatingState_Month${hm.currentMonth}_heating"
+				hm.OperatingState_MonthYearago_idle = hm."OperatingState_Month${hm.currentMonth}_idle"
+				hm.OperatingState_MonthYearago_fanonly = hm."OperatingState_Month${hm.currentMonth}_fanonly"
+				hm.FanMode_MonthYearago_On = hm."FanMode_Month${hm.currentMonth}_On"
+				hm.FanMode_MonthYearago_auto = hm."FanMode_Month${hm.currentMonth}_auto"
+				hm."OperatingState_Month${hm.currentMonth}_cooling" = 0L
+				hm."OperatingState_Month${hm.currentMonth}_heating" = 0L
+				hm."OperatingState_Month${hm.currentMonth}_idle" = 0L
+				hm."FanMode_Month${hm.currentMonth}_On" = 0L
+				hm."FanMode_Month${hm.currentMonth}_auto" = 0L
+			}
+
+			t1 = hm?.OperatingState_thisYear_cooling?.toInteger() ?: 0L
+			hm.OperatingState_thisYear_cooling = t1 + Op_coolingusage
+			t1 = hm?.OperatingState_thisYear_heating?.toInteger() ?: 0L
+			hm.OperatingState_thisYear_heating = t1 + Op_heatingusage
+			t1 = hm?.OperatingState_thisYear_idle?.toInteger() ?: 0L
+			hm.OperatingState_thisYear_idle = t1 + Op_idle
+			t1 = hm?.OperatingState_thisYear_fanonly?.toInteger() ?: 0L
+			hm.OperatingState_thisYear_fanonly = t1 + Op_fanonly
+			t1 = hm?.FanMode_thisYear_On?.toInteger() ?: 0L
+			hm.FanMode_thisYear_On = t1 + fan_on
+			t1 = hm?.FanMode_thisYear_auto?.toInteger() ?: 0L
+			hm.FanMode_thisYear_auto = t1 + fan_auto
+
+			if(yearChange) {
+				hm.currentYear = yearNum
+				hm.OperatingState_lastYear_cooling = hm.OperatingState_thisYear_cooling
+				hm.OperatingState_lastYear_heating = hm.OperatingState_thisYear_heating
+				hm.OperatingState_lastYear_idle = hm.OperatingState_thisYear_idle
+				hm.OperatingState_lastYear_fanonly = hm.OperatingState_thisYear_fanonly
+				hm.FanMode_lastYear_On = hm.FanMode_thisYear_On
+				hm.FanMode_lastYear_auto = hm.FanMode_thisYear_auto
+
+				hm.OperatingState_thisYear_cooling = 0L
+				hm.OperatingState_thisYear_heating = 0L
+				hm.OperatingState_thisYear_idle = 0L
+				hm.OperatingState_thisYear_fanonly = 0L
+				hm.FanMode_thisYear_On = 0L
+				hm.FanMode_thisYear_auto = 0L
+			}
+			state.historyStoreMap = hm
+
+		} catch (ex) {
+			state.eric = 0 // force clear of stats
+			state.remove("historyStoreMap")
+			log.error "updateOperatingHistory Exception:", ex
 		}
-
-		t1 = hm[OperatingState_thisYear_cooling]?.toInteger() ?: 0L
-		hm.OperatingState_thisYear_cooling = t1 + Op_coolingusage
-		t1 = hm[OperatingState_thisYear_heating]?.toInteger() ?: 0L
-		hm.OperatingState_thisYear_heating = t1 + Op_heatingusage
-		t1 = hm[OperatingState_thisYear_idle]?.toInteger() ?: 0L
-		hm.OperatingState_thisYear_idle = t1 + Op_idle
-		t1 = hm[OperatingState_thisYear_fanonly]?.toInteger() ?: 0L
-		hm.OperatingState_thisYear_fanonly = t1 + Op_fanonly
-		t1 = hm[FanMode_thisYear_On]?.toInteger() ?: 0L
-		hm.FanMode_thisYear_On = t1 + fan_on
-		t1 = hm[FanMode_thisYear_auto]?.toInteger() ?: 0L
-		hm.FanMode_thisYear_auto = t1 + fan_auto
-
-		if(yearChange) {
-			hm.currentYear = yearNum
-			hm.OperatingState_lastYear_cooling = hm.OperatingState_thisYear_cooling
-			hm.OperatingState_lastYear_heating = hm.OperatingState_thisYear_heating
-			hm.OperatingState_lastYear_idle = hm.OperatingState_thisYear_idle
-			hm.OperatingState_lastYear_fanonly = hm.OperatingState_thisYear_fanonly
-			hm.FanMode_lastYear_On = hm.FanMode_thisYear_On
-			hm.FanMode_lastYear_auto = hm.FanMode_thisYear_auto
-
-			hm.OperatingState_thisYear_cooling = 0L
-			hm.OperatingState_thisYear_heating = 0L
-			hm.OperatingState_thisYear_idle = 0L
-			hm.OperatingState_thisYear_fanonly = 0L
-			hm.FanMode_thisYear_On = 0L
-			hm.FanMode_thisYear_auto = 0L
-		}
-		state.historyStoreMap = hm
 	}
 }
 
 def getSumUsage(table, String strtyp) {
 	//log.trace "getSumUsage...$strtyp Table size: ${table?.size()}"
-	def totseconds = 0L
-	def newseconds = 0L
+	long totseconds = 0L
+	long newseconds = 0L
 
 	def hr
 	def mins
@@ -2866,7 +2896,7 @@ def getSumUsage(table, String strtyp) {
 	}
 	//log.info "$strtyp totseconds: $totseconds"
 
-	return totseconds.toInteger()
+	return totseconds
 }
 
 def initHistoryStore() {
@@ -3036,12 +3066,12 @@ def getHistoryStore() {
 	}
 	def hm = thm.clone()
 
-	def Op_coolingusage = getSumUsage(state.operatingStateTable, "cooling").toInteger()
-	def Op_heatingusage = getSumUsage(state.operatingStateTable, "heating").toInteger()
-	def Op_idle = getSumUsage(state.operatingStateTable, "idle").toInteger()
-	def Op_fanonly = getSumUsage(state.operatingStateTable, "fan only").toInteger()
-	def fan_on = getSumUsage(state.fanModeTable, "on").toInteger()
-	def fan_auto = getSumUsage(state.fanModeTable, "auto").toInteger()
+	long Op_coolingusage = getSumUsage(state.operatingStateTable, "cooling")
+	long Op_heatingusage = getSumUsage(state.operatingStateTable, "heating")
+	long Op_idle = getSumUsage(state.operatingStateTable, "idle")
+	long Op_fanonly = getSumUsage(state.operatingStateTable, "fan only")
+	long fan_on = getSumUsage(state.fanModeTable, "on")
+	long fan_auto = getSumUsage(state.fanModeTable, "auto")
 
 	//log.info "fanon ${fan_on}  fanauto: ${fan_auto} opidle: ${Op_idle}  cool: ${Op_coolingusage} heat: ${Op_heatingusage}"
 	//log.debug "currentDay ${hm.currentDay} | currentMonth ${hm.currentMonth}  | currentYear: ${hm.currentYear}"
@@ -3053,30 +3083,30 @@ def getHistoryStore() {
 	hm."FanMode_Day${hm.currentDay}_On" = fan_on
 	hm."FanMode_Day${hm.currentDay}_auto" = fan_auto
 
-	def t1 = hm["OperatingState_Month${hm.currentMonth}_cooling"]?.toInteger() ?: 0L
+	long t1 = hm?."OperatingState_Month${hm.currentMonth}_cooling"?.toInteger() ?: 0L
 	hm."OperatingState_Month${hm.currentMonth}_cooling" = t1 + Op_coolingusage
-	t1 = hm["OperatingState_Month${hm.currentMonth}_heating"]?.toInteger() ?: 0L
+	t1 = hm?."OperatingState_Month${hm.currentMonth}_heating"?.toInteger() ?: 0L
 	hm."OperatingState_Month${hm.currentMonth}_heating" = t1 + Op_heatingusage
-	t1 = hm["OperatingState_Month${hm.currentMonth}_idle"]?.toInteger() ?: 0L
+	t1 = hm?."OperatingState_Month${hm.currentMonth}_idle"?.toInteger() ?: 0L
 	hm."OperatingState_Month${hm.currentMonth}_idle" = t1 + Op_idle
-	t1 = hm["OperatingState_Month${hm.currentMonth}_fanonly"]?.toInteger() ?: 0L
+	t1 = hm?."OperatingState_Month${hm.currentMonth}_fanonly"?.toInteger() ?: 0L
 	hm."OperatingState_Month${hm.currentMonth}_fanonly" = t1 + Op_fanonly
-	t1 = hm["FanMode_Month${hm.currentMonth}_On"]?.toInteger() ?: 0L
+	t1 = hm?."FanMode_Month${hm.currentMonth}_On"?.toInteger() ?: 0L
 	hm."FanMode_Month${hm.currentMonth}_On" = t1 + fan_on
-	t1 = hm["FanMode_Month${hm.currentMonth}_auto"]?.toInteger() ?: 0L
+	t1 = hm?."FanMode_Month${hm.currentMonth}_auto"?.toInteger() ?: 0L
 	hm."FanMode_Month${hm.currentMonth}_auto" = t1 + fan_auto
 
-	t1 = hm[OperatingState_thisYear_cooling]?.toInteger() ?: 0L
+	t1 = hm?.OperatingState_thisYear_cooling?.toInteger() ?: 0L
 	hm.OperatingState_thisYear_cooling = t1 + Op_coolingusage
-	t1 = hm[OperatingState_thisYear_heating]?.toInteger() ?: 0L
+	t1 = hm?.OperatingState_thisYear_heating?.toInteger() ?: 0L
 	hm.OperatingState_thisYear_heating = t1 + Op_heatingusage
-	t1 = hm[OperatingState_thisYear_idle]?.toInteger() ?: 0L
+	t1 = hm?.OperatingState_thisYear_idle?.toInteger() ?: 0L
 	hm.OperatingState_thisYear_idle = t1 + Op_idle
-	t1 = hm[OperatingState_thisYear_fanonly]?.toInteger() ?: 0L
+	t1 = hm?.OperatingState_thisYear_fanonly?.toInteger() ?: 0L
 	hm.OperatingState_thisYear_fanonly = t1 + Op_fanonly
-	t1 = hm[FanMode_thisYear_On]?.toInteger() ?: 0L
+	t1 = hm?.FanMode_thisYear_On?.toInteger() ?: 0L
 	hm.FanMode_thisYear_On = t1 + fan_on
-	t1 = hm[FanMode_thisYear_auto]?.toInteger() ?: 0L
+	t1 = hm?.FanMode_thisYear_auto?.toInteger() ?: 0L
 	hm.FanMode_thisYear_auto = t1 + fan_auto
 
 	return hm
@@ -3411,7 +3441,7 @@ def getGraphHTML() {
 				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/js/swiper.min.js"></script>
 				<style>
-					
+
 				</style>
 			</head>
 			<body>
@@ -3577,7 +3607,7 @@ def getDeviceTile(devNum) {
 				state?.temperatureTableYesterday?.size() > 0 &&
 				state?.humidityTable?.size() > 0 &&
 				state?.coolSetpointTable?.size() > 0 &&
-				state?.heatSetpointTable?.size() > 0) ? showChartHtml() : (state?.showGraphs ? hideChartHtml() : "")
+				state?.heatSetpointTable?.size() > 0) ? showChartHtml(devNum) : (state?.showGraphs ? hideChartHtml() : "")
 
 		def whoSetEco = device?.currentValue("whoSetEcoMode")
 		def whoSetEcoDt = state?.ecoDescDt
@@ -4075,13 +4105,13 @@ def showChartHtml(devNum="") {
 		  <div class="swiper-slide">
 		  	<section class="sectionBg">
 			  <h3>Event History</h3>
-	  		  <div id="main_graph" style="width: 100%; height: 425px;"></div>
+	  		  <div id="main_graph${devNum}" style="width: 100%; height: 425px;"></div>
 			</section>
   		  </div>
   		  <div class="swiper-slide">
 		  	<section class="sectionBg">
 				<h3>Usage History</h3>
-  		    	<div id="use_graph" style="width: 100%; height: 425px;"></div>
+  		    	<div id="use_graph${devNum}" style="width: 100%; height: 425px;"></div>
 			</section>
   		  </div>
 	  """

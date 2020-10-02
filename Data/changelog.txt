@@ -1,41 +1,50 @@
-V5.4.0 (August 10th, 2018):
+V5.6.4 (May 16th, 2019):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
- • ADDED: Pushover Manager Integration
+ • Token Updates
 
-Automation App 5.4.0:
- • ADDED: Pushover Manager Integration
-
-V5.3.9 (July 30th, 2018):
+V5.6.2 (April 9th, 2019):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
- • ADDED: Camera Motion Zone Filtering (Requires Nest Aware and NST Streaming Service)
- • FIXED: Bug fixes and Code Cleanups/Optimizations
+ • Adjust for more conservative nest throttling
 
-Automation App 5.3.6:
-• REMOVED: Support for Contact Book
-
-V5.3.8 (July 4th, 2018):
+V5.6.1 (March 29th, 2019):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
- • FIXED: Storage App file no longer required
- • FIXED: Bug fixes and Code Cleanups
+ • REMOVED: Local rest stream support (Until ST restores the feature)
+ • UPDATED: Simplified exception report logic.
 
-Automation App 5.3.5:
-• FIXED: Converted degree symbols to unicode
-• ADDED: Storage codebase is now part of Automations file
-• FIXED: Code Cleanups and State Usage Reductions
-
-V5.3.7 (May 31st, 2018):
+V5.5.6 (November 14th, 2018):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
- • ADDED: New Storage App to help eliminate State Size issues (It's not storing any data yet)
- • ADDED: Maintenance Commands can now be run from the Diagnostics Web Interface (More Commands to Come)
- • UPDATED: Will remove un-needed or broken automations
- • FIXED: Converted degree symbols to unicode
- • FIXED: Bug fixes and Code Cleanups
+ • Enabled Echo Speaks device support for Voice Notifications
+ • FIXED: Bug Fixes
 
-Automation App 5.3.4:
-• FIXED: Converted degree symbols to unicode
-• FIXED: Code Cleanups and State Usage Reductions
+Automation App 5.4.7:
+ • FIXED: Bug Fixes
 
+V5.5.2 (September 9th, 2018):
+▔▔▔▔▔▔▔▔▔▔▔
+Manager App:
+ • Enabled new camera options
+ • FIXED: Bug Fixes
+
+Automation App 5.4.5:
+ • FIXED: Bug Fixes
+
+V5.5.1 (September 8th, 2018):
+▔▔▔▔▔▔▔▔▔▔▔
+Manager App:
+ • FIXED: Bug Fixes
+
+Automation App 5.4.4:
+ • FIXED: Bug Fixes
+
+V5.5.0 (August 28th, 2018):
+▔▔▔▔▔▔▔▔▔▔▔
+Manager App:
+ • UPDATED: NST Streaming is now communicates via local network (when enabled)
+ • FIXED: Bug Fixes
+
+Automation App 5.4.3:
+ • FIXED: Bug Fixes
