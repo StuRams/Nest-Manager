@@ -3,7 +3,7 @@
  *	Author: Anthony S. (@tonesto7)
  *	Co-Authors: Ben W. (@desertBlade), Eric S. (@E_Sch)
  *
- *	Copyright (C) 2017, 2018 Anthony S., Ben W.
+ *	Copyright (C) 2017, 2018, 2019 Anthony S., Ben W.
  * 	Licensing Info: Located at https://raw.githubusercontent.com/tonesto7/nest-manager/master/LICENSE.md
  */
 
@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.3.7" }
+def devVer() { return "5.4.4" }
 
 // for the UI
 metadata {
@@ -57,14 +57,15 @@ metadata {
 			state("default", label: 'Data Last Received:\n${currentValue}')
 		}
 		valueTile("apiStatus", "device.apiStatus", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-			state "ok", label: "API Status:\nOK"
-			state "issue", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+                        state "Good", label: "API Status:\nOK"
+                        state "Sporadic", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+                        state "Outage", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
 		}
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
 		}
 		valueTile("devTypeVer", "device.devTypeVer", width: 2, height: 1, decoration: "flat") {
-			state("default", label: 'Device Type:\nv${currentValue}')
+			state("default", label: 'Device Type:\nv${currentValue}', defaultState: true)
 		}
 		// htmlTile(name:"html", action: "getHtml", width: 6, height: 4, whitelist: ["raw.githubusercontent.com", "cdn.rawgit.com"])
 
@@ -130,9 +131,7 @@ def modifyDeviceStatus(status) {
 
 def ping() {
 	Logger("ping...")
-//	if(useTrackedHealth()) {
-		keepAwakeEvent()
-//	}
+	keepAwakeEvent()
 }
 
 def keepAwakeEvent() {
@@ -193,7 +192,7 @@ def processEvent(data) {
 	def eventData = data?.evt
 	state.remove("eventData")
 	//log.trace("processEvent Parsing data ${eventData}")
-	try {
+//	try {
 		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			state.isBeta = eventData?.isBeta == true ? true : false
@@ -202,12 +201,10 @@ def processEvent(data) {
 			state.enRemDiagLogging = eventData?.enRemDiagLogging == true ? true : false
 			state.healthMsg = eventData?.healthNotify?.healthMsg == true ? true : false
 			state.healthMsgWait = eventData?.healthNotify?.healthMsgWait
-//			if(useTrackedHealth()) {
-				if(eventData.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
-					state.hcTimeout = eventData?.hcTimeout
-					verifyHC()
-				}
-//			}
+			if(eventData.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
+				state.hcTimeout = eventData?.hcTimeout
+				verifyHC()
+			}
 			state.nestTimeZone = eventData?.tz ?: null
 			state.clientBl = eventData?.clientBl == true ? true : false
 			state.mobileClientType = eventData?.mobileClientType
@@ -216,11 +213,11 @@ def processEvent(data) {
 			presenceEvent(eventData?.pres)
 			apiStatusEvent((!eventData?.apiIssues ? false : true))
 			deviceVerEvent(eventData?.latestVer.toString())
-			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException = false ? false : true }
+			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException == false ? false : true }
 			lastUpdatedEvent(true)
 
-			if(eventData?.lastStrucDataUpd) {
-				def newDt = formatDt(Date.parse("E MMM dd HH:mm:ss z yyyy", eventData?.lastStrucDataUpd?.toString()))
+			if(eventData?.lastStrDataUpd) {
+				def newDt = formatDt(Date.parse("E MMM dd HH:mm:ss z yyyy", eventData?.lastStrDataUpd?.toString()))
 				//log.debug "newDt: $newDt"
 				def curDt = Date.parse("E MMM dd HH:mm:ss z yyyy", getDtNow())
 				def lastDt = Date.parse("E MMM dd HH:mm:ss z yyyy", newDt?.toString())
@@ -235,11 +232,12 @@ def processEvent(data) {
 		//This will return all of the devices state data to the logs.
 		//log.debug "Device State Data: ${getState()}"
 		return null
-	}
+/*	}
 	catch (ex) {
 		log.error "generateEvent Exception:", ex
 		exceptionDataHandler(ex?.message, "generateEvent")
 	}
+*/
 }
 
 def getDataByName(String name) {
@@ -340,8 +338,7 @@ def presenceEvent(presence) {
 
 def apiStatusEvent(issue) {
 	def curStat = device.currentState("apiStatus")?.value
-	def newStat = issue ? "issue" : "ok"
-	state?.apiStatus = newStat
+	def newStat = issue
 	if(isStateChange(device, "apiStatus", newStat.toString())) {
 		Logger("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
 		sendEvent(name: "apiStatus", value: newStat, descriptionText: "API Status is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
@@ -576,4 +573,3 @@ def getHtml() {
 private def textDevName() { return "Nest Presence${appDevName()}" }
 private def appDevType()  { return false }
 private def appDevName()  { return appDevType() ? " (Dev)" : "" }
-
